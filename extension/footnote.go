@@ -299,6 +299,12 @@ type FootnoteConfig struct {
 
 	// BacklinkHTML is an HTML content for footnote backlinks.
 	BacklinkHTML []byte
+
+	// Prefix is an optional prefix for footnote links.
+	Prefix []byte
+
+	// Postfix is an optional postfix for footnote links.
+	Postfix []byte
 }
 
 // FootnoteOption interface is a functional option interface for the extension.
@@ -317,6 +323,8 @@ func NewFootnoteConfig() FootnoteConfig {
 		LinkClass:     []byte("footnote-ref"),
 		BacklinkClass: []byte("footnote-backref"),
 		BacklinkHTML:  []byte("&#x21a9;&#xfe0e;"),
+		Prefix:        []byte(""),
+		Postfix:       []byte(""),
 	}
 }
 
@@ -337,6 +345,10 @@ func (c *FootnoteConfig) SetOption(name renderer.OptionName, value interface{}) 
 		c.BacklinkClass = value.([]byte)
 	case optFootnoteBacklinkHTML:
 		c.BacklinkHTML = value.([]byte)
+	case optFootnotePrefix:
+		c.Prefix = value.([]byte)
+	case optFootnotePostfix:
+		c.Postfix = value.([]byte)
 	default:
 		c.Config.SetOption(name, value)
 	}
@@ -500,6 +512,44 @@ func WithFootnoteBacklinkHTML(a []byte) FootnoteOption {
 	return &withFootnoteBacklinkHTML{a}
 }
 
+const optFootnotePrefix renderer.OptionName = "FootnotePrefix"
+
+type withFootnotePrefix struct {
+	value []byte
+}
+
+func (o *withFootnotePrefix) SetConfig(c *renderer.Config) {
+	c.Options[optFootnotePrefix] = o.value
+}
+
+func (o *withFootnotePrefix) SetFootnoteOption(c *FootnoteConfig) {
+	c.Prefix = o.value
+}
+
+// WithFootnotePrefix is a functional option that is a class for footnote backlinks.
+func WithFootnotePrefix(a []byte) FootnoteOption {
+	return &withFootnotePrefix{a}
+}
+
+const optFootnotePostfix renderer.OptionName = "FootnotePostfix"
+
+type withFootnotePostfix struct {
+	value []byte
+}
+
+func (o *withFootnotePostfix) SetConfig(c *renderer.Config) {
+	c.Options[optFootnotePostfix] = o.value
+}
+
+func (o *withFootnotePostfix) SetFootnoteOption(c *FootnoteConfig) {
+	c.Postfix = o.value
+}
+
+// WithFootnotePostfix is a functional option that is a class for footnote backlinks.
+func WithFootnotePostfix(a []byte) FootnoteOption {
+	return &withFootnotePostfix{a}
+}
+
 // FootnoteHTMLRenderer is a renderer.NodeRenderer implementation that
 // renders FootnoteLink nodes.
 type FootnoteHTMLRenderer struct {
@@ -537,7 +587,9 @@ func (r *FootnoteHTMLRenderer) renderFootnoteLink(w util.BufWriter, source []byt
 		}
 		_ = w.WriteByte(':')
 		_, _ = w.WriteString(is)
-		_, _ = w.WriteString(`"><a href="#`)
+		_, _ = w.WriteString(`">`)
+		_, _ = w.Write(r.FootnoteConfig.Prefix)
+		_, _ = w.WriteString(`<a href="#`)
 		_, _ = w.Write(r.idPrefix(node))
 		_, _ = w.WriteString(`fn:`)
 		_, _ = w.WriteString(is)
@@ -551,7 +603,9 @@ func (r *FootnoteHTMLRenderer) renderFootnoteLink(w util.BufWriter, source []byt
 		_, _ = w.WriteString(`" role="doc-noteref">`)
 
 		_, _ = w.WriteString(is)
-		_, _ = w.WriteString(`</a></sup>`)
+		_, _ = w.WriteString(`</a>`)
+		_, _ = w.Write(r.FootnoteConfig.Postfix)
+		_, _ = w.WriteString(`</sup>`)
 	}
 	return gast.WalkContinue, nil
 }

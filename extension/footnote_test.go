@@ -138,4 +138,54 @@ Another one.[^2]
 		},
 		t,
 	)
+
+	markdown = goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+		goldmark.WithExtensions(
+			NewFootnote(
+				WithFootnoteIDPrefix([]byte("article12-")),
+				WithFootnoteLinkClass([]byte("link-class")),
+				WithFootnoteBacklinkClass([]byte("backlink-class")),
+				WithFootnoteLinkTitle([]byte("link-title-%%-^^")),
+				WithFootnoteBacklinkTitle([]byte("backlink-title")),
+				WithFootnoteBacklinkHTML([]byte("^")),
+				WithFootnotePrefix([]byte("[")),
+				WithFootnotePostfix([]byte("]")),
+			),
+		),
+	)
+
+	testutil.DoTestCase(
+		markdown,
+		testutil.MarkdownTestCase{
+			No:          1,
+			Description: "Footnote with options",
+			Markdown: `That's some text with a footnote.[^1]
+
+Same footnote.[^1]
+
+Another one.[^2]
+
+[^1]: And that's the footnote.
+[^2]: Another footnote.
+`,
+			Expected: `<p>That's some text with a footnote.<sup id="article12-fnref:1">[<a href="#article12-fn:1" class="link-class" title="link-title-2-1" role="doc-noteref">1</a>]</sup></p>
+<p>Same footnote.<sup id="article12-fnref1:1">[<a href="#article12-fn:1" class="link-class" title="link-title-2-1" role="doc-noteref">1</a>]</sup></p>
+<p>Another one.<sup id="article12-fnref:2">[<a href="#article12-fn:2" class="link-class" title="link-title-1-2" role="doc-noteref">2</a>]</sup></p>
+<div class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="article12-fn:1">
+<p>And that's the footnote.&#160;<a href="#article12-fnref:1" class="backlink-class" title="backlink-title" role="doc-backlink">^</a>&#160;<a href="#article12-fnref1:1" class="backlink-class" title="backlink-title" role="doc-backlink">^</a></p>
+</li>
+<li id="article12-fn:2">
+<p>Another footnote.&#160;<a href="#article12-fnref:2" class="backlink-class" title="backlink-title" role="doc-backlink">^</a></p>
+</li>
+</ol>
+</div>`,
+		},
+		t,
+	)
 }
